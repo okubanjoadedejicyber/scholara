@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    <h1>Discover Scholarships</h1>
+
+    <p>
+        Find scholarship opportunities from different
+        organisations and institutions.
+    </p>
+
+    <form method="POST" action="{{ url_for('discover') }}">
+        <button type="submit">
+            Search for Scholarships
+        </button>
+    </form>
+
+    {% if error %}
+    <p>{{ error }}</p>
+    {% endif %}
+
+    {% if scholarships %}
+
+    <h2>Scholarship Opportunities</h2>
+
+    <p>{{ scholarships|length }} opportunities found.</p>
+
+    {% for scholarship in scholarships %}
+
+    <div class="scholarship-card">
+
+        <h3>{{ scholarship.title }}</h3>
+
+        <p>{{ scholarship.description }}</p>
+
+        <p>
+            <strong>Organisation:</strong>
+            {{ scholarship.source }}
+        </p>
+
+        <p>
+            <strong>Country:</strong>
+            {{ scholarship.country }}
+        </p>
+
+        <a href="{{ scholarship.url }}" target="_blank" rel="noopener noreferrer">
+            View Opportunity
+        </a>
+
+    </div>
+
+    {% endfor %}
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

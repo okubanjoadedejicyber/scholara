@@ -1,0 +1,145 @@
+{% extends "layout.html" %}
+
+{% block title %}Scholara | Discover Scholarships{% endblock %}
+
+{% block content %}
+
+<!-- HERO SECTION -->
+<section class="hero">
+
+    <div class="hero-content">
+
+        <div class="hero-label">
+            YOUR FUTURE STARTS HERE
+        </div>
+
+        <h1>
+            Your Education Deserves
+            <span>Every Opportunity.</span>
+        </h1>
+
+        <p>
+            Discover scholarships and educational funding opportunities
+            from Nigeria and around the world, all in one place.
+        </p>
+
+        <div class="hero-buttons">
+            <a href="{{ url_for('discover') }}" class="btn-primary">
+                Explore Scholarships
+            </a>
+
+            {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('register') }}" class="btn-secondary">
+                Create Free Account
+            </a>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <div class="hero-info">
+        <div class="info-card">
+            <span>01</span>
+            <h3>Discover</h3>
+            <p>Find scholarship opportunities from different sources.</p>
+        </div>
+
+        <div class="info-card">
+            <span>02</span>
+            <h3>Compare</h3>
+            <p>Check requirements and find opportunities that fit you.</p>
+        </div>
+
+        <div class="info-card">
+            <span>03</span>
+            <h3>Apply</h3>
+            <p>Connect directly to official scholarship applications.</p>
+        </div>
+    </div>
+
+</section>
+
+
+<!-- SEARCH SECTION -->
+<section class="search-section">
+
+    <div>
+        <h2>What opportunity are you looking for?</h2>
+        <p>Start discovering scholarships that match your goals.</p>
+    </div>
+
+    <form action="{{ url_for('discover') }}" method="GET" class="search-form">
+
+        <input type="text" name="q" placeholder="Search scholarships, countries or institutions...">
+
+        <button type="submit">Search</button>
+
+    </form>
+
+</section>
+
+
+<!-- WHY SCHOLARA -->
+<section class="features-section">
+
+    <div class="section-heading">
+        <span>WHY SCHOLARA?</span>
+        <h2>Making scholarship discovery easier.</h2>
+        <p>
+            We bring scholarship opportunities together
+            so students can spend less time searching and
+            more time preparing to apply.
+        </p>
+    </div>
+
+    <div class="features-grid">
+
+        <div class="feature-card">
+            <div class="feature-icon">01</div>
+            <h3>Discover Opportunities</h3>
+            <p>
+                Find scholarship opportunities from Nigerian
+                and international sources.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">02</div>
+            <h3>Find Your Match</h3>
+            <p>
+                Compare your academic information with
+                scholarship eligibility requirements.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">03</div>
+            <h3>Stay Updated</h3>
+            <p>
+                Keep track of application deadlines and
+                save interesting opportunities.
+            </p>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- CALL TO ACTION -->
+<section class="cta-section">
+
+    <h2>Your next opportunity could change everything.</h2>
+
+    <p>
+        Start discovering scholarships and take another
+        step towards your educational goals.
+    </p>
+
+    <a href="{{ url_for('discover') }}" class="btn-light">
+        Find Scholarships
+    </a>
+
+</section>
+
+{% endblock %}
