@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scholara — Find Scholarships That Move You Forward</title>
+    <meta name="description"
+        content="Discover scholarships, understand eligibility and find opportunities that match your academic journey.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+
+<body>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+
+
+    {% endwith %}
+
+    <div class="workspace">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-heading">
+                <a class="brand" href="/">
+                    <span class="brand-symbol">
+                        <i></i><i></i><i></i>
+                    </span>
+                    <span>Scholara<span class="brand-period">.</span></span>
+                </a>
+            </div>
+
+            <div class="sidebar-section-label">WORKSPACE</div>
+
+            <nav class="side-nav">
+                <a class="side-link active" href="{{ url_for('dashboard') }}">
+                    <span class="nav-icon">▦</span> Overview
+                </a>
+
+                <a class="side-link" href="{{ url_for('discover') }}">
+                    <span class="nav-icon">⌕</span> Discover scholarships
+                </a>
+
+                <!-- <a class="side-link" href="{{ url_for('saved') }}">
+                    <span class="nav-icon">♡</span> Saved scholarships
+                </a> -->
+
+                <!-- <a class="side-link" href="{{ url_for('applications') }}">
+                    <span class="nav-icon">▤</span> My applications
+                </a> -->
+
+                <a class="side-link" href="{{ url_for('profile') }}">
+                    <span class="nav-icon">⚙</span> Student profile
+                </a>
+            </nav>
+
+            <div class="sidebar-bottom">
+
+                <div class="side-note">
+                    <span class="side-note-icon">✓</span>
+                    <strong>Your scholarship journey</strong>
+                    <p>
+                        Scholara helps you discover scholarship opportunities.
+                        Always verify eligibility and deadlines on official websites.
+                    </p>
+                </div>
+
+                <div class="sidebar-footer">
+                    <div class="mini-monogram">S</div>
+                    <div>
+                        <strong>Scholara</strong>
+                        <small>Find. Match. Apply.</small>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+        
+        {% block content %}{% endblock %}
+
+    </div>
+
+
+    {% block public_content %}{% endblock %}
+
+
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

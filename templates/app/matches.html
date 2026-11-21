@@ -1,0 +1,164 @@
+{% extends "app/app.html" %}
+
+{% block title %}Scholara | Your Matches{% endblock %}
+
+{% block content %}
+
+<div class="main-column">
+
+    <header class="topbar">
+        <div class="breadcrumb">
+            <span>Scholara</span> /
+            <span>Your Matches</span>
+        </div>
+    </header>
+
+    <div class="workspace-content">
+
+        <section class="page-intro">
+            <div>
+                <div class="eyebrow">MATCHING ENGINE</div>
+                <h1>Opportunities that fit.</h1>
+                <p>
+                    Scholarships ranked using your student profile
+                    and available scholarship information.
+                </p>
+            </div>
+        </section>
+
+        <div class="scholarship-results">
+
+            {% if results %}
+
+            {% for result in results %}
+
+            <article class="scholarship-card">
+
+                <div class="scholarship-card-top">
+
+                    <div>
+                        <span class="scholarship-organization">
+                            {{ result.scholarship.organization
+                            or 'Scholarship provider' }}
+                        </span>
+
+                        <h2>
+                            {{ result.scholarship.title }}
+                        </h2>
+                    </div>
+
+                    <div class="match-score">
+                        <strong>
+                            {{ result.match_score }}%
+                        </strong>
+                        <span>Match</span>
+                    </div>
+
+                </div>
+
+                <p class="scholarship-description">
+                    {{ result.scholarship.description
+                    or 'No description provided.' }}
+                </p>
+
+                <div class="scholarship-meta">
+
+                    <span>
+                        {{ result.scholarship.country
+                        or 'Location unspecified' }}
+                    </span>
+
+                    <span>
+                        {{ result.scholarship.funding
+                        or 'Funding unspecified' }}
+                    </span>
+
+                    <span>
+                        Deadline:
+                        {{ result.scholarship.deadline
+                        or 'Not specified' }}
+                    </span>
+
+                </div>
+
+                {% if result.reasons %}
+
+                <div class="match-reasons">
+
+                    <h3>Why it matches</h3>
+
+                    {% for reason in result.reasons %}
+
+                    <p>
+                        <span>✓</span>
+                        {{ reason }}
+                    </p>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+                {% if result.missing %}
+
+                <div class="match-missing">
+
+                    <h3>Needs verification</h3>
+
+                    {% for item in result.missing %}
+
+                    <p>{{ item }}</p>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+                <div class="scholarship-actions">
+
+                    <a class="btn btn-dark" href="{{ url_for(
+                                    'scholarship_details',
+                                    scholarship_id=result.scholarship.id
+                                ) }}">
+                        View scholarship
+                    </a>
+
+                    <a class="btn btn-outline" href="{{ url_for(
+                                    'analyse_scholarship',
+                                    scholarship_id=result.scholarship.id
+                                ) }}">
+                        AI analysis
+                    </a>
+
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+            {% else %}
+
+            <div class="empty-state">
+                <h2>No scholarships yet</h2>
+                <p>
+                    Add scholarships to the catalogue
+                    to see your matches.
+                </p>
+            </div>
+
+            {% endif %}
+
+        </div>
+
+        <p class="scholarship-disclaimer">
+            Match scores are preliminary indicators and do not
+            represent official eligibility confirmation.
+        </p>
+
+    </div>
+
+</div>
+
+{% endblock %}

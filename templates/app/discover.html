@@ -1,60 +1,238 @@
-{% extends "layout.html" %}
+{% extends "app/app.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='discover.css') }}">
+{% endblock %}
 
 {% block content %}
 
-<div class="container">
+<main class="discover-page">
 
-    <h1>Discover Scholarships</h1>
+    <section class="discover-intro">
+        <div>
+            <span class="discover-eyebrow">SCHOLARSHIP EXPLORER</span>
+            <h1>Find scholarships that fit.</h1>
+            <p>
+                Discover opportunities that match your academic profile,
+                goals and interests.
+            </p>
+        </div>
 
-    <p>
-        Find scholarship opportunities from different
-        organisations and institutions.
-    </p>
-
-    <form method="POST" action="{{ url_for('discover') }}">
-        <button type="submit">
-            Search for Scholarships
-        </button>
-    </form>
-
-    {% if error %}
-    <p>{{ error }}</p>
-    {% endif %}
-
-    {% if scholarships %}
-
-    <h2>Scholarship Opportunities</h2>
-
-    <p>{{ scholarships|length }} opportunities found.</p>
-
-    {% for scholarship in scholarships %}
-
-    <div class="scholarship-card">
-
-        <h3>{{ scholarship.title }}</h3>
-
-        <p>{{ scholarship.description }}</p>
-
-        <p>
-            <strong>Organisation:</strong>
-            {{ scholarship.source }}
-        </p>
-
-        <p>
-            <strong>Country:</strong>
-            {{ scholarship.country }}
-        </p>
-
-        <a href="{{ scholarship.url }}" target="_blank" rel="noopener noreferrer">
-            View Opportunity
+        <a href="{{ url_for('dashboard') }}" class="discover-action">
+            My Dashboard <span>↗</span>
         </a>
+    </section>
+
+    <section class="discover-toolbar">
+        <div class="discover-search">
+            <span class="search-icon">⌕</span>
+            <input type="search" id="scholarshipSearch" placeholder="Search scholarships, countries, universities...">
+        </div>
+    </section>
+
+    <section class="discover-categories">
+
+        <button class="category-pill active" data-category="all">
+            All scholarships
+        </button>
+
+        <button class="category-pill" data-category="undergraduate">
+            Undergraduate
+        </button>
+
+        <button class="category-pill" data-category="masters">
+            Master's
+        </button>
+
+        <button class="category-pill" data-category="phd">
+            PhD
+        </button>
+
+        <button class="category-pill" data-category="fully funded">
+            Fully funded
+        </button>
+
+    </section>
+
+    <section class="discover-filter-row">
+
+        <div class="discover-filter">
+            <label for="deadlineFilter">Application status</label>
+
+            <select id="deadlineFilter">
+                <option value="all">All statuses</option>
+                <option value="open">Open</option>
+                <option value="closing">Closing soon</option>
+                <option value="closed">Closed</option>
+            </select>
+        </div>
+
+        <label class="expired-toggle">
+            <input type="checkbox" id="includeExpired">
+            Include expired scholarships
+        </label>
+
+    </section>
+
+    <section class="discover-results-bar">
+        <div>
+            <span class="results-label">Available opportunities</span>
+            <span id="resultsCount"></span>
+        </div>
+
+        <span class="results-note">Scholarship directory</span>
+    </section>
+
+    <section class="scholarship-grid" id="scholarshipGrid">
+
+        {% if scholarships %}
+
+        {% for scholarship in scholarships %}
+
+        <article class="scholarship-card" data-search="
+                    {{ scholarship.title|default('') }}
+                    {{ scholarship.description|default('') }}
+                    {{ scholarship.country|default('') }}
+                    {{ scholarship.organization|default('') }}
+                    {{ scholarship.university|default('') }}
+                    {{ scholarship.category|default('') }}
+                " data-category="{{ scholarship.category|default('all')|lower }}"
+            data-status="{{ scholarship.status|default('open')|lower }}">
+
+            <div class="scholarship-topline">
+
+                <div class="scholarship-org">
+                    <div class="scholarship-mark">
+                        {{ scholarship.organization|default('S')|first|upper }}
+                    </div>
+
+                    <div class="scholarship-org-meta">
+                        <span class="scholarship-org-name">
+                            {{ scholarship.organization|default('Scholarship Provider') }}
+                        </span>
+
+                        <span class="scholarship-country">
+                            {{ scholarship.country|default('International') }}
+                        </span>
+                    </div>
+                </div>
+
+                <span class="scholarship-status">
+                    {{ scholarship.status|default('Open')|title }}
+                </span>
+
+            </div>
+
+            <div class="scholarship-main">
+
+                <h3>
+                    {{ scholarship.title|default('Scholarship Opportunity') }}
+                </h3>
+
+                <p class="scholarship-description">
+                    {{ scholarship.description|default('Explore this scholarship opportunity and check its eligibility
+                    requirements.') }}
+                </p>
+
+            </div>
+
+            <div class="scholarship-meta">
+
+                <div class="scholarship-meta-item">
+                    <span class="meta-label">Country</span>
+                    <span class="meta-value">
+                        {{ scholarship.country|default('Not specified') }}
+                    </span>
+                </div>
+
+                <div class="scholarship-meta-item">
+                    <span class="meta-label">Deadline</span>
+                    <span class="meta-value">
+                        {{ scholarship.deadline|default('Not specified') }}
+                    </span>
+                </div>
+
+            </div>
+
+            <div class="scholarship-bottom">
+
+                <div class="scholarship-match">
+                    <span class="match-label">Scholara match</span>
+
+                    <span class="match-score">
+                        {% if scholarship.match_score is defined and scholarship.match_score is not none %}
+                        {{ scholarship.match_score }}%
+                        {% else %}
+                        --
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="scholarship-tags">
+
+                    {% if scholarship.fully_funded is defined and scholarship.fully_funded %}
+                    <span class="funded-tag">Fully funded</span>
+                    {% endif %}
+
+                    <span class="level-tag">
+                        {{ scholarship.category|default('Scholarship')|title }}
+                    </span>
+
+                </div>
+
+                <a href="{{ url_for('matches') }}" class="scholarship-arrow" aria-label="View scholarship matches">
+                    ↗
+                </a>
+
+            </div>
+
+        </article>
+
+        {% endfor %}
+
+        {% else %}
+
+        <div class="discover-empty">
+
+            <div class="empty-icon">✦</div>
+
+            <h3>No scholarships found yet</h3>
+
+            <p>
+                Scholara is still gathering opportunities.
+                Try refreshing your dashboard or check again later.
+            </p>
+
+            <a href="{{ url_for('dashboard') }}" class="empty-action">
+                Return to dashboard →
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+    <div class="discover-empty" id="searchEmpty" style="display:none;">
+
+        <div class="empty-icon">⌕</div>
+
+        <h3>No matching scholarships</h3>
+
+        <p>
+            Try a different search term or change your filters.
+        </p>
 
     </div>
 
-    {% endfor %}
+    <footer class="discover-disclaimer">
+        <span>ⓘ</span>
+        <p>
+            Scholarship information may change. Always verify eligibility,
+            deadlines and application requirements on the official scholarship website.
+        </p>
+    </footer>
 
-    {% endif %}
-
-</div>
+</main>
 
 {% endblock %}

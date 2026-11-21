@@ -49,6 +49,14 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_timeout": 30,
 }
 
+
+from scholarship_services import (
+    discover_scholarships,
+    match_scholarship,
+    analyse_with_ai,
+)
+
+
 db = SQLAlchemy(app)
 
 # Import models after db has been initialized
@@ -297,72 +305,22 @@ def dashboard():
 
 
 # --------------------------------------------------
-# SCHOLARSHIP DISCOVERY
+# DISCOVER SCHOLARSHIPS
 # --------------------------------------------------
 
 @app.route("/discover")
 @login_required
 def discover():
 
-    q = request.args.get("q", "").strip()
-
-    query = models.Scholarship.query
-
-    if q:
-
-        search_filter = (
-            models.Scholarship.title.ilike(f"%{q}%")
-            | models.Scholarship.organization.ilike(f"%{q}%")
-            | models.Scholarship.country.ilike(f"%{q}%")
-            | models.Scholarship.description.ilike(f"%{q}%")
-        )
-
-        query = query.filter(search_filter)
-
-    scholarships = query.order_by(
+    scholarships = models.Scholarship.query.order_by(
         models.Scholarship.date_added.desc()
     ).all()
 
     return render_template(
         "app/discover.html",
-        scholarships=scholarships,
-        query=q
+        scholarships=scholarships
     )
 
-
-# --------------------------------------------------
-# SCHOLARSHIP DETAILS
-# --------------------------------------------------
-
-@app.route("/scholarship/<int:scholarship_id>")
-@login_required
-def scholarship_details(scholarship_id):
-
-    scholarship = db.session.get(
-        models.Scholarship, scholarship_id
-    )
-
-    if not scholarship:
-        return "Scholarship not found", 404
-
-    user_id = session["user_id"]
-
-    saved = models.SavedScholarship.query.filter_by(
-        user_id=user_id,
-        scholarship_id=scholarship.id
-    ).first()
-
-    application = models.Application.query.filter_by(
-        user_id=user_id,
-        scholarship_id=scholarship.id
-    ).first()
-
-    return render_template(
-        "app/scholarship_details.html",
-        scholarship=scholarship,
-        saved=saved,
-        application=application
-    )
 
 
 # --------------------------------------------------
@@ -511,43 +469,6 @@ def applications():
 
 
 # --------------------------------------------------
-# UPDATE APPLICATION
-# --------------------------------------------------
-
-@app.route("/update_application/<int:application_id>", methods=["POST"])
-@login_required
-def update_application(application_id):
-
-    application = models.Application.query.filter_by(
-        id=application_id,
-        user_id=session["user_id"]
-    ).first()
-
-    if not application:
-        return "Application not found", 404
-
-    status = request.form.get("status", "Not Started")
-    notes = request.form.get("notes", "")
-
-    allowed_statuses = [
-        "Not Started",
-        "Preparing",
-        "Submitted",
-        "Awarded",
-        "Rejected"
-    ]
-
-    if status in allowed_statuses:
-        application.status = status
-
-    application.notes = notes
-
-    db.session.commit()
-
-    return redirect(url_for("applications"))
-
-
-# --------------------------------------------------
 # STUDENT PROFILE
 # --------------------------------------------------
 
@@ -653,54 +574,171 @@ def profile():
 
 
 
-# --------------------------------------------------
-# DATABASE TEST
-# --------------------------------------------------
-
-@app.route("/test-db")
-def test_db():
-
-    try:
-
-        db.session.execute(db.text("SELECT 1"))
-
-        return "Database connection successful!"
-
-    except Exception as e:
-
-        return f"Database connection failed: {e}"
-
 
 # --------------------------------------------------
-# VIEW DATABASE TABLES
+# SCHOLARSHIP MATCHES
 # --------------------------------------------------
 
-@app.route("/tables")
-def tables():
+@app.route("/matches")
+@login_required
+def matches():
 
-    try:
+    user = get_current_user()
 
-        result = db.session.execute(
-            db.text("""
-                SELECT table_name
-                FROM information_schema.tables
-                WHERE table_schema = 'public'
-                ORDER BY table_name
-            """)
+    if not user:
+        session.clear()
+        return redirect(url_for("signin"))
+
+    # Get the student's profile
+    profile = models.StudentProfile.query.filter_by(
+        user_id=user.id
+    ).first()
+
+    if not profile:
+        flash("Please complete your student profile first.", "warning")
+        return redirect(url_for("profile"))
+
+    # Get all scholarships
+    scholarships = models.Scholarship.query.order_by(
+        models.Scholarship.date_added.desc()
+    ).all()
+
+    results = []
+
+    for scholarship in scholarships:
+
+        match_result = match_scholarship(user, scholarship)
+
+        results.append({
+            "scholarship": scholarship,
+            "match_score": match_result.get("match_score", 0),
+            "reasons": match_result.get("reasons", []),
+            "missing": match_result.get("missing", [])
+        })
+
+    # Highest matching scholarships first
+    results.sort(
+        key=lambda item: item["match_score"],
+        reverse=True
+    )
+
+    return render_template(
+        "app/matches.html",
+        results=results
+    )
+
+
+
+
+
+
+
+
+
+# --------------------------------------------------
+# SCHOLARSHIP PROFILE MATCH
+# --------------------------------------------------
+
+@app.route("/scholarship/<int:scholarship_id>")
+@login_required
+def scholarship_details(scholarship_id):
+
+    user = get_current_user()
+
+    if not user:
+        session.clear()
+        return redirect(url_for("signin"))
+
+    scholarship = db.session.get(
+        models.Scholarship,
+        scholarship_id
+    )
+
+    if not scholarship:
+        flash("Scholarship not found.", "error")
+        return redirect(url_for("discover"))
+
+    # Match this scholarship against the student's profile
+    match_result = match_scholarship(user, scholarship)
+
+    # Build the result in the format matches.html expects
+    results = [{
+        "scholarship": scholarship,
+        "match_score": match_result.get("match_score", 0),
+        "reasons": match_result.get("reasons", []),
+        "missing": match_result.get("missing", [])
+    }]
+
+    return render_template(
+        "app/matches.html",
+        results=results
+    )
+
+
+
+
+
+
+# --------------------------------------------------
+# AI SCHOLARSHIP ANALYSIS
+# --------------------------------------------------
+
+@app.route(
+    "/app/scholarship/<int:scholarship_id>/analyse",
+    methods=["GET", "POST"]
+)
+@login_required
+def analyse_scholarship(scholarship_id):
+
+    user = get_current_user()
+
+    scholarship = db.session.get(
+        models.Scholarship,
+        scholarship_id
+    )
+
+    if not scholarship:
+
+        flash("Scholarship not found.", "error")
+
+        return redirect(url_for("discover"))
+
+    if request.method == "POST":
+
+        scholarship_text = f"""
+        Title: {scholarship.title}
+
+        Organization: {scholarship.organization}
+
+        Description: {scholarship.description}
+
+        Eligibility: {scholarship.eligibility}
+
+        Country: {scholarship.country}
+
+        Funding: {scholarship.funding}
+
+        Deadline: {scholarship.deadline}
+
+        Application Link: {scholarship.application_link}
+        """
+
+        analysis = analyse_with_ai(
+            scholarship_text,
+            user
         )
 
-        table_names = [
-            row[0] for row in result.fetchall()
-        ]
+        return render_template(
+            "app/analysis.html",
+            scholarship=scholarship,
+            analysis=analysis
+        )
 
-        return "<h1>Neon Tables</h1><ul>" + "".join(
-            f"<li>{name}</li>" for name in table_names
-        ) + "</ul>"
-
-    except Exception as e:
-
-        return f"Could not retrieve tables: {e}"
-
+    return render_template(
+        "app/analysis.html",
+        scholarship=scholarship,
+        analysis=None
+    )
 
 # --------------------------------------------------
 # CREATE TABLES

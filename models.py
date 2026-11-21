@@ -52,7 +52,7 @@ class Scholarship(db.Model):
     country = db.Column(db.String(100))
     funding = db.Column(db.String(100))
     deadline = db.Column(db.String(100))
-    application_link = db.Column(db.Text, unique=True)
+    application_link = db.Column(db.Text)
     source = db.Column(db.String(250))
     date_added = db.Column(db.DateTime, default=db.func.now())
 

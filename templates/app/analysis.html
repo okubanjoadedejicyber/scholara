@@ -1,0 +1,126 @@
+{% extends "app/app.html" %}
+
+{% block title %}Scholara | AI Analysis{% endblock %}
+
+{% block content %}
+
+<div class=" main-column analysis-container">
+
+    <!-- PAGE INTRO -->
+    <div class="page-intro">
+        <div>
+            <div class="eyebrow">SCHOLARSHIP INTELLIGENCE</div>
+            <h1>Understand your opportunity.</h1>
+            <p>
+                Get an AI-powered breakdown of scholarship requirements
+                and how they relate to your academic profile.
+            </p>
+        </div>
+    </div>
+
+    <!-- SCHOLARSHIP INFORMATION -->
+    <section class="analysis-scholarship-card">
+
+        <div class="analysis-card-top">
+            <span class="analysis-label">SELECTED SCHOLARSHIP</span>
+            <span class="analysis-status">AI ANALYSIS</span>
+        </div>
+
+        <h2>{{ scholarship.title }}</h2>
+
+        <p class="analysis-organization">
+            {{ scholarship.organization }}
+        </p>
+
+        <div class="analysis-meta">
+
+            <div>
+                <span>Country</span>
+                <strong>{{ scholarship.country or "Not specified" }}</strong>
+            </div>
+
+            <div>
+                <span>Funding</span>
+                <strong>{{ scholarship.funding or "Not specified" }}</strong>
+            </div>
+
+            <div>
+                <span>Deadline</span>
+                <strong>{{ scholarship.deadline or "Not specified" }}</strong>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ANALYSIS ACTION -->
+    {% if not analysis %}
+
+    <section class="analysis-start">
+
+        <div class="analysis-icon">✦</div>
+
+        <h2>Ready to understand your chances?</h2>
+
+        <p>
+            Scholara AI will review the scholarship details and compare
+            its requirements with your student profile.
+        </p>
+
+        <form method="POST" action="{{ url_for('analyse_scholarship', scholarship_id=scholarship.id) }}">
+
+            <button type="submit" class="analysis-button">
+                Analyse this scholarship
+                <span>→</span>
+            </button>
+
+        </form>
+
+    </section>
+
+    {% else %}
+
+    <!-- AI RESULT -->
+    <section class="analysis-result">
+
+        <div class="analysis-result-heading">
+            <div>
+                <div class="eyebrow">YOUR AI REPORT</div>
+                <h2>Scholarship analysis</h2>
+            </div>
+
+            <span class="analysis-status">Completed</span>
+        </div>
+
+        <div class="analysis-content">
+            {% if analysis is string %}
+            {{ analysis | e | replace('\n', '<br>') | safe }}
+            {% else %}
+            {{ analysis }}
+            {% endif %}
+        </div>
+
+        <div class="analysis-actions">
+
+            <form method="POST" action="{{ url_for('analyse_scholarship', scholarship_id=scholarship.id) }}">
+
+                <button type="submit" class="analysis-button">
+                    Analyse again
+                    <span>↻</span>
+                </button>
+
+            </form>
+
+            <a href="{{ url_for('matches') }}" class="analysis-back">
+                Back to matches
+            </a>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

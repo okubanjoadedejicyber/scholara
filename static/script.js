@@ -93,3 +93,117 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const searchInput = document.getElementById("scholarshipSearch");
+    const categoryButtons = document.querySelectorAll(".category-pill");
+    const deadlineFilter = document.getElementById("deadlineFilter");
+    const includeExpired = document.getElementById("includeExpired");
+    const cards = document.querySelectorAll(".scholarship-card");
+    const resultsCount = document.getElementById("resultsCount");
+    const searchEmpty = document.getElementById("searchEmpty");
+
+    let selectedCategory = "all";
+
+    function filterScholarships() {
+
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const selectedStatus = deadlineFilter.value;
+        const showExpired = includeExpired.checked;
+
+        let visibleCount = 0;
+
+        cards.forEach(function (card) {
+
+            const searchableText = (
+                card.dataset.search || ""
+            ).toLowerCase();
+
+            const category = (
+                card.dataset.category || ""
+            ).toLowerCase();
+
+            const status = (
+                card.dataset.status || ""
+            ).toLowerCase();
+
+            const matchesSearch =
+                searchableText.includes(searchTerm);
+
+            const matchesCategory =
+                selectedCategory === "all" ||
+                category.includes(selectedCategory) ||
+                searchableText.includes(selectedCategory);
+
+            const matchesStatus =
+                selectedStatus === "all" ||
+                status.includes(selectedStatus);
+
+            const matchesExpired =
+                showExpired ||
+                !status.includes("closed");
+
+            const visible =
+                matchesSearch &&
+                matchesCategory &&
+                matchesStatus &&
+                matchesExpired;
+
+            card.style.display = visible ? "" : "none";
+
+            if (visible) {
+                visibleCount++;
+            }
+
+        });
+
+        resultsCount.textContent = "(" + visibleCount + ")";
+
+        if (searchEmpty) {
+
+            searchEmpty.style.display =
+                cards.length > 0 && visibleCount === 0
+                ? "block"
+                : "none";
+
+        }
+
+    }
+
+    // SEARCH
+    searchInput.addEventListener("input", filterScholarships);
+
+    // STATUS FILTER
+    deadlineFilter.addEventListener("change", filterScholarships);
+
+    // EXPIRED SCHOLARSHIPS
+    includeExpired.addEventListener("change", filterScholarships);
+
+    // CATEGORY FILTERS
+    categoryButtons.forEach(function (button) {
+
+        button.addEventListener("click", function () {
+
+            categoryButtons.forEach(function (pill) {
+                pill.classList.remove("active");
+            });
+
+            button.classList.add("active");
+
+            selectedCategory = button.dataset.category;
+
+            filterScholarships();
+
+        });
+
+    });
+
+    // INITIAL FILTER
+    filterScholarships();
+
+});
+
+
