@@ -1,188 +1,720 @@
 
+import secrets
+
+from flask import request, session, render_template, redirect, url_for, flash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from functools import wraps
+
+from flask import (
+    Flask, render_template, request, redirect,
+    url_for, session, flash
+)
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import (LoginManager, UserMixin, login_user, logout_user, login_required, current_user)
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-from scholarship_services import discover_scholarships
 
-# Load environment variables
+# --------------------------------------------------
+# CONFIGURATION
+# --------------------------------------------------
+
 load_dotenv()
 
-# Initialize Flask
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "scholara-development-key")
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///scholara.db"
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[],
+    storage_uri="memory://"
+)
+
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+
+database_url = os.getenv("DATABASE_URL")
+
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace(
+        "postgres://", "postgresql://", 1
+    )
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# Initialize database
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+    "pool_timeout": 30,
+}
+
 db = SQLAlchemy(app)
 
-# Initialize login manager
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = "login"
+# Import models after db has been initialized
+import models
 
 
-# STUDENT DATABASE MODEL
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    full_name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
-    education_level = db.Column(db.String(50))
-    institution = db.Column(db.String(150))
+# --------------------------------------------------
+# HELPERS
+# --------------------------------------------------
+
+def login_required(route):
+    @wraps(route)
+    def wrapper(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect(url_for("signin"))
+        return route(*args, **kwargs)
+    return wrapper
 
 
-# Load logged-in student
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User, int(user_id))
+def get_current_user():
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return None
+
+    return models.User.query.get(user_id)
+
+@app.context_processor
+def inject_current_user():
+    return dict(current_user=get_current_user())
 
 
-# HOME PAGE
+
+# --------------------------------------------------
+# HOME
+# --------------------------------------------------
+
 @app.route("/")
-def index():
+def home():
+    if session.get("user_id"):
+        return redirect(url_for("dashboard"))
+
     return render_template("index.html")
 
 
-# STUDENT REGISTRATION
-@app.route("/register", methods=["GET", "POST"])
-def register():
+# --------------------------------------------------
+# SIGNUP
+# --------------------------------------------------
+
+@app.route("/signup", methods=["GET", "POST"])
+@limiter.limit("3 per minute", methods=["POST"])
+def signup():
 
     if request.method == "POST":
 
         full_name = request.form.get("full_name", "").strip()
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
-        education_level = request.form.get("education_level", "")
-        institution = request.form.get("institution", "")
 
+        # Validate required fields
         if not full_name or not email or not password:
-            flash("Please complete all required fields.", "danger")
-            return redirect(url_for("register"))
+            return render_template(
+                "signup.html",
+                error="Please fill in all fields."
+            )
 
-        if User.query.filter_by(email=email).first():
-            flash("This email is already registered.", "warning")
-            return redirect(url_for("register"))
+        # Validate password length
+        if len(password) < 8:
+            return render_template(
+                "signup.html",
+                error="Your password must be at least 8 characters."
+            )
 
-        new_user = User(
-            full_name=full_name,
-            email=email,
-            password=generate_password_hash(password),
-            education_level=education_level,
-            institution=institution
-        )
+        # Check if account already exists
+        existing_user = models.User.query.filter_by(
+            email=email
+        ).first()
 
-        db.session.add(new_user)
-        db.session.commit()
+        if existing_user:
+            return render_template(
+                "signup.html",
+                error="An account with this email already exists."
+            )
 
-        flash("Registration successful. Please log in.", "success")
-        return redirect(url_for("login"))
+        # Split full name
+        name_parts = full_name.split()
 
-    return render_template("register.html")
+        first_name = name_parts[0]
+        last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+
+        # Hash password
+        hashed_password = generate_password_hash(password)
+
+        try:
+
+            user = models.User(
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                password_hash=hashed_password
+            )
+
+            db.session.add(user)
+            db.session.flush()
+
+            # Create student profile
+            profile = models.StudentProfile(
+                user_id=user.id
+            )
+
+            db.session.add(profile)
+
+            db.session.commit()
+
+            # Login user
+            session.clear()
+            session["user_id"] = user.id
+            session["first_name"] = user.first_name
+
+            return redirect(url_for("dashboard"))
+
+        except Exception as e:
+
+            db.session.rollback()
+
+            print("SIGNUP ERROR:", e)
+
+            return render_template(
+                "signup.html",
+                error="Something went wrong creating your account. Please try again."
+            )
+
+    return render_template("signup.html")
 
 
-# STUDENT LOGIN
-@app.route("/login", methods=["GET", "POST"])
-def login():
+
+# --------------------------------------------------
+# SIGNIN
+# --------------------------------------------------
+
+@app.route("/signin", methods=["GET", "POST"])
+@limiter.limit("5 per minute", methods=["POST"])
+def signin():
 
     if request.method == "POST":
 
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
 
-        user = User.query.filter_by(email=email).first()
+        if not email or not password:
+            return render_template(
+                "signin.html",
+                error="Please enter your email and password."
+            )
 
-        if user and check_password_hash(user.password, password):
-            login_user(user)
-            return redirect(url_for("opportunities"))
+        user = models.User.query.filter_by(
+            email=email
+        ).first()
 
-        flash("Invalid email or password.", "danger")
+        if user and check_password_hash(
+            user.password_hash, password
+        ):
 
-    return render_template("login.html")
+            session.clear()
+            session["user_id"] = user.id
+            session["first_name"] = user.first_name
+
+            return redirect(url_for("dashboard"))
+
+        return render_template(
+            "signin.html",
+            error="Invalid email or password."
+        )
+
+    return render_template("signin.html")
 
 
-# STUDENT LOGOUT
+# --------------------------------------------------
+# LOGOUT
+# --------------------------------------------------
+
 @app.route("/logout")
-@login_required
 def logout():
 
-    logout_user()
-    flash("You have logged out.", "info")
+    session.clear()
 
-    return redirect(url_for("index"))
-
-
-# # SCHOLARSHIP OPPORTUNITIES
-# @app.route("/opportunities")
-# @login_required
-# def opportunities():
-
-#     return render_template("opportunities.html")
+    return redirect(url_for("home"))
 
 
-# STUDENT PROFILE
-@app.route("/profile")
+# --------------------------------------------------
+# DASHBOARD
+# --------------------------------------------------
+
+@app.route("/app/dashboard")
 @login_required
-def profile():
+def dashboard():
 
-    return render_template("profile.html")
+    user = get_current_user()
 
+    saved_count = models.SavedScholarship.query.filter_by(
+        user_id=user.id
+    ).count()
 
-# SCHOLARSHIP ANALYSIS
-@app.route("/analyse")
-@login_required
-def analyse():
+    application_count = models.Application.query.filter_by(
+        user_id=user.id
+    ).count()
 
-    return render_template("analyse.html")
+    discovered_count = models.Scholarship.query.count()
 
+    scholarships = models.Scholarship.query.order_by(
+        models.Scholarship.date_added.desc()
+    ).limit(6).all()
 
-# APPLICATION INFORMATION
-@app.route("/application")
-@login_required
-def application():
+    profile = models.StudentProfile.query.filter_by(
+        user_id=user.id
+    ).first()
 
-    return render_template("application.html")
+    profile_fields = [
+        profile.university if profile else None,
+        profile.course if profile else None,
+        profile.level if profile else None,
+        profile.country if profile else None,
+        profile.state if profile else None,
+        profile.cgpa if profile else None,
+        profile.interests if profile else None,
+    ]
 
-
-# DISCOVER SCHOLARSHIPS
-@app.route("/discover", methods=["GET", "POST"])
-def discover():
-
-    scholarships = []
-    error = None
-
-    if request.method == "POST":
-        try:
-            scholarships = discover_scholarships()
-
-            if not scholarships:
-                error = "No scholarships found. Please try again later."
-
-        except Exception as e:
-            print("Discovery error:", e)
-            error = "Unable to discover scholarships at the moment."
-
-    return render_template(
-        "discover.html",
-        scholarships=scholarships,
-        error=error
+    completed_fields = sum(
+        1 for field in profile_fields if field
     )
 
-# Error Handling
-@app.errorhandler(404)
-def page_not_found(error):
-    return render_template('error.html'), 404
+    profile_readiness = round(
+        (completed_fields / len(profile_fields)) * 100
+    )
+
+    return render_template(
+        "app/dashboard.html",
+        user=user,
+        saved_count=saved_count,
+        application_count=application_count,
+        discovered_count=discovered_count,
+        scholarships=scholarships,
+        profile_readiness=profile_readiness
+    )
 
 
-# CREATE DATABASE AND RUN APPLICATION
+
+# --------------------------------------------------
+# SCHOLARSHIP DISCOVERY
+# --------------------------------------------------
+
+@app.route("/discover")
+@login_required
+def discover():
+
+    q = request.args.get("q", "").strip()
+
+    query = models.Scholarship.query
+
+    if q:
+
+        search_filter = (
+            models.Scholarship.title.ilike(f"%{q}%")
+            | models.Scholarship.organization.ilike(f"%{q}%")
+            | models.Scholarship.country.ilike(f"%{q}%")
+            | models.Scholarship.description.ilike(f"%{q}%")
+        )
+
+        query = query.filter(search_filter)
+
+    scholarships = query.order_by(
+        models.Scholarship.date_added.desc()
+    ).all()
+
+    return render_template(
+        "app/discover.html",
+        scholarships=scholarships,
+        query=q
+    )
+
+
+# --------------------------------------------------
+# SCHOLARSHIP DETAILS
+# --------------------------------------------------
+
+@app.route("/scholarship/<int:scholarship_id>")
+@login_required
+def scholarship_details(scholarship_id):
+
+    scholarship = db.session.get(
+        models.Scholarship, scholarship_id
+    )
+
+    if not scholarship:
+        return "Scholarship not found", 404
+
+    user_id = session["user_id"]
+
+    saved = models.SavedScholarship.query.filter_by(
+        user_id=user_id,
+        scholarship_id=scholarship.id
+    ).first()
+
+    application = models.Application.query.filter_by(
+        user_id=user_id,
+        scholarship_id=scholarship.id
+    ).first()
+
+    return render_template(
+        "app/scholarship_details.html",
+        scholarship=scholarship,
+        saved=saved,
+        application=application
+    )
+
+
+# --------------------------------------------------
+# SAVE SCHOLARSHIP
+# --------------------------------------------------
+
+@app.route("/save/<int:scholarship_id>", methods=["POST"])
+@login_required
+def save_scholarship(scholarship_id):
+
+    scholarship = db.session.get(
+        models.Scholarship, scholarship_id
+    )
+
+    if not scholarship:
+        return "Scholarship not found", 404
+
+    user_id = session["user_id"]
+
+    existing = models.SavedScholarship.query.filter_by(
+        user_id=user_id,
+        scholarship_id=scholarship_id
+    ).first()
+
+    if not existing:
+
+        saved = models.SavedScholarship(
+            user_id=user_id,
+            scholarship_id=scholarship_id
+        )
+
+        db.session.add(saved)
+        db.session.commit()
+
+    return redirect(
+        request.referrer or url_for("discover")
+    )
+
+
+# --------------------------------------------------
+# UNSAVE SCHOLARSHIP
+# --------------------------------------------------
+
+@app.route("/unsave/<int:scholarship_id>", methods=["POST"])
+@login_required
+def unsave_scholarship(scholarship_id):
+
+    saved = models.SavedScholarship.query.filter_by(
+        user_id=session["user_id"],
+        scholarship_id=scholarship_id
+    ).first()
+
+    if saved:
+        db.session.delete(saved)
+        db.session.commit()
+
+    return redirect(
+        request.referrer or url_for("saved")
+    )
+
+
+# --------------------------------------------------
+# SAVED SCHOLARSHIPS
+# --------------------------------------------------
+
+@app.route("/saved")
+@login_required
+def saved():
+
+    saved_records = models.SavedScholarship.query.filter_by(
+        user_id=session["user_id"]
+    ).order_by(
+        models.SavedScholarship.id.desc()
+    ).all()
+
+    scholarships = [
+        record.scholarship for record in saved_records
+    ]
+
+    return render_template(
+        "app/saved.html",
+        scholarships=scholarships
+    )
+
+
+# --------------------------------------------------
+# TRACK APPLICATION
+# --------------------------------------------------
+
+@app.route("/track/<int:scholarship_id>", methods=["POST"])
+@login_required
+def track_application(scholarship_id):
+
+    scholarship = db.session.get(
+        models.Scholarship, scholarship_id
+    )
+
+    if not scholarship:
+        return "Scholarship not found", 404
+
+    user_id = session["user_id"]
+
+    existing = models.Application.query.filter_by(
+        user_id=user_id,
+        scholarship_id=scholarship_id
+    ).first()
+
+    if not existing:
+
+        application = models.Application(
+            user_id=user_id,
+            scholarship_id=scholarship_id,
+            status="Not Started",
+            notes=""
+        )
+
+        db.session.add(application)
+        db.session.commit()
+
+    return redirect(
+        url_for(
+            "scholarship_details",
+            scholarship_id=scholarship_id
+        )
+    )
+
+
+# --------------------------------------------------
+# APPLICATIONS
+# --------------------------------------------------
+
+@app.route("/applications")
+@login_required
+def applications():
+
+    applications = models.Application.query.filter_by(
+        user_id=session["user_id"]
+    ).order_by(
+        models.Application.id.desc()
+    ).all()
+
+    return render_template(
+        "app/applications.html",
+        applications=applications
+    )
+
+
+# --------------------------------------------------
+# UPDATE APPLICATION
+# --------------------------------------------------
+
+@app.route("/update_application/<int:application_id>", methods=["POST"])
+@login_required
+def update_application(application_id):
+
+    application = models.Application.query.filter_by(
+        id=application_id,
+        user_id=session["user_id"]
+    ).first()
+
+    if not application:
+        return "Application not found", 404
+
+    status = request.form.get("status", "Not Started")
+    notes = request.form.get("notes", "")
+
+    allowed_statuses = [
+        "Not Started",
+        "Preparing",
+        "Submitted",
+        "Awarded",
+        "Rejected"
+    ]
+
+    if status in allowed_statuses:
+        application.status = status
+
+    application.notes = notes
+
+    db.session.commit()
+
+    return redirect(url_for("applications"))
+
+
+# --------------------------------------------------
+# STUDENT PROFILE
+# --------------------------------------------------
+
+
+@app.route("/profile", methods=["GET", "POST"])
+@login_required
+@limiter.limit("5 per minute", methods=["POST"])
+def profile():
+
+    user = get_current_user()
+
+    # Verify that the account still exists
+    if user is None:
+        session.clear()
+        flash("Your account could not be verified. Please sign in again.", "error")
+        return redirect(url_for("signin"))
+
+    # Find this user's existing profile
+    student_profile = models.StudentProfile.query.filter_by(
+        user_id=user.id
+    ).first()
+
+    # Generate CSRF token for the form
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(32)
+
+    if request.method == "POST":
+
+        submitted_token = request.form.get("csrf_token", "")
+        saved_token = session.get("csrf_token", "")
+
+        # Validate the form submission
+        if not saved_token or not secrets.compare_digest(
+            submitted_token, saved_token
+        ):
+            flash("Invalid form submission. Please try again.", "error")
+            return redirect(url_for("profile"))
+
+        # Validate required fields
+        university = request.form.get("university", "").strip()
+        course = request.form.get("course", "").strip()
+        level = request.form.get("level", "").strip()
+
+        if not university or not course or not level:
+            flash("Please complete the required academic fields.", "error")
+            return redirect(url_for("profile"))
+
+        # Validate CGPA
+        cgpa_input = request.form.get("cgpa", "").strip()
+
+        if cgpa_input:
+            try:
+                cgpa = float(cgpa_input)
+            except ValueError:
+                flash("Please enter a valid CGPA.", "error")
+                return redirect(url_for("profile"))
+
+            if not 0 <= cgpa <= 5:
+                flash("CGPA must be between 0 and 5.", "error")
+                return redirect(url_for("profile"))
+        else:
+            cgpa = None
+
+        state = request.form.get("state", "").strip()
+        country = request.form.get("country", "").strip() or "Nigeria"
+        interests = request.form.get("interests", "").strip()
+
+        # Update existing record or create a new one
+        if student_profile is None:
+            student_profile = models.StudentProfile(
+                user_id=user.id
+            )
+            db.session.add(student_profile)
+
+        student_profile.university = university
+        student_profile.course = course
+        student_profile.level = level
+        student_profile.cgpa = cgpa
+        student_profile.state = state
+        student_profile.country = country
+        student_profile.interests = interests
+
+        try:
+            db.session.commit()
+
+            # Rotate token after successful save
+            session["csrf_token"] = secrets.token_hex(32)
+
+            flash("Profile saved successfully!", "success")
+
+        except Exception:
+            db.session.rollback()
+            flash("Unable to save your profile. Please try again.", "error")
+
+        return redirect(url_for("profile"))
+
+    return render_template(
+        "app/profile.html",
+        user=user,
+        profile=student_profile,
+        csrf_token=session["csrf_token"]
+    )
+
+
+
+# --------------------------------------------------
+# DATABASE TEST
+# --------------------------------------------------
+
+@app.route("/test-db")
+def test_db():
+
+    try:
+
+        db.session.execute(db.text("SELECT 1"))
+
+        return "Database connection successful!"
+
+    except Exception as e:
+
+        return f"Database connection failed: {e}"
+
+
+# --------------------------------------------------
+# VIEW DATABASE TABLES
+# --------------------------------------------------
+
+@app.route("/tables")
+def tables():
+
+    try:
+
+        result = db.session.execute(
+            db.text("""
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                ORDER BY table_name
+            """)
+        )
+
+        table_names = [
+            row[0] for row in result.fetchall()
+        ]
+
+        return "<h1>Neon Tables</h1><ul>" + "".join(
+            f"<li>{name}</li>" for name in table_names
+        ) + "</ul>"
+
+    except Exception as e:
+
+        return f"Could not retrieve tables: {e}"
+
+
+# --------------------------------------------------
+# CREATE TABLES
+# --------------------------------------------------
+
 with app.app_context():
     db.create_all()
 
 
+# --------------------------------------------------
+# RUN APPLICATION
+# --------------------------------------------------
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+

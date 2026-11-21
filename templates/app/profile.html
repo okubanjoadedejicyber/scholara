@@ -1,0 +1,205 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+
+<div class="workspace">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-heading">
+            <a class="brand" href="/">
+                <span class="brand-symbol">
+                    <i></i><i></i><i></i>
+                </span>
+                <span>Scholara<span class="brand-period">.</span></span>
+            </a>
+        </div>
+
+        <div class="sidebar-section-label">WORKSPACE</div>
+
+        <nav class="side-nav">
+            <a class="side-link active" href="{{ url_for('dashboard') }}">
+                <span class="nav-icon">▦</span> Overview
+            </a>
+
+            <a class="side-link" href="{{ url_for('discover') }}">
+                <span class="nav-icon">⌕</span> Discover scholarships
+            </a>
+
+            <a class="side-link" href="{{ url_for('saved') }}">
+                <span class="nav-icon">♡</span> Saved scholarships
+            </a>
+
+            <a class="side-link" href="{{ url_for('applications') }}">
+                <span class="nav-icon">▤</span> My applications
+            </a>
+
+            <a class="side-link" href="{{ url_for('profile') }}">
+                <span class="nav-icon">⚙</span> Student profile
+            </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <div class="side-note">
+                <span class="side-note-icon">✓</span>
+                <strong>Your scholarship journey</strong>
+                <p>
+                    Scholara helps you discover scholarship opportunities.
+                    Always verify eligibility and deadlines on official websites.
+                </p>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="mini-monogram">S</div>
+                <div>
+                    <strong>Scholara</strong>
+                    <small>Find. Match. Apply.</small>
+                </div>
+            </div>
+
+        </div>
+    </aside>
+
+    <div class=" main-column profile-page">
+
+        <div class="page-intro">
+            <div>
+                <div class="eyebrow">STUDENT PROFILE</div>
+                <h1>Build your scholarship profile.</h1>
+                <p>Keep your academic information updated to help Scholara find opportunities that match you.</p>
+            </div>
+        </div>
+
+        <div class="profile-note">
+            <div>
+                <strong>Your profile helps us find relevant scholarships.</strong>
+                <p>Provide accurate academic information so scholarship opportunities can be matched to your background.
+                </p>
+            </div>
+        </div>
+
+        <form id="profileForm" method="POST" action="{{ url_for('profile') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div class="profile-layout">
+
+                <div class="profile-form">
+
+                    <section class="form-section">
+                        <div class="form-section-head">
+                            <span class="form-step">01</span>
+                            <div>
+                                <h2>Academic information</h2>
+                                <p>Tell us about your education.</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+
+                            <label>
+                                University
+                                <input name="university" maxlength="150" placeholder="Your university"
+                                    value="{{ profile.university if profile else '' }}" required>
+                            </label>
+
+                            <label>
+                                Course of study
+                                <input name="course" maxlength="150" placeholder="Your course"
+                                    value="{{ profile.course if profile else '' }}" required>
+                            </label>
+
+                            <label>
+                                Current level
+                                <select name="level" required>
+                                    <option value="">Choose level</option>
+                                    {% for level_option in ['100','200','300','400','500','Postgraduate'] %}
+                                    <option value="{{ level_option }}" {% if profile and
+                                        profile.level|string==level_option %}selected{% endif %}>
+                                        {{ level_option }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+
+                            <label>
+                                CGPA
+                                <input name="cgpa" type="number" min="0" max="5" step="0.01" placeholder="e.g. 4.20"
+                                    value="{{ profile.cgpa if profile and profile.cgpa is not none else '' }}">
+                            </label>
+
+                            <label>
+                                State
+                                <input name="state" maxlength="100" placeholder="State of residence"
+                                    value="{{ profile.state if profile else '' }}">
+                            </label>
+
+                            <label>
+                                Country
+                                <input name="country" maxlength="100" placeholder="Country"
+                                    value="{{ profile.country if profile else 'Nigeria' }}">
+                            </label>
+
+                        </div>
+                    </section>
+
+                    <section class="form-section">
+
+                        <div class="form-section-head">
+                            <span class="form-step">02</span>
+                            <div>
+                                <h2>Your interests</h2>
+                                <p>Tell us what kinds of opportunities you are looking for.</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <label class="span-two">
+                                Scholarship interests
+                                <textarea name="interests" rows="5" maxlength="2000"
+                                    placeholder="Research, engineering, technology, leadership, international scholarships...">{{ profile.interests if profile and profile.interests else '' }}</textarea>
+                            </label>
+                        </div>
+
+                    </section>
+
+                    <div class="form-submit">
+                        <span id="saveStatus">Your information is saved to your account.</span>
+
+                        <button type="submit" id="saveProfileBtn" class="btn btn-dark">
+                            <span id="saveButtonText">Save profile</span>
+                        </button>
+                    </div>
+
+                </div>
+
+                <aside class="profile-aside">
+                    <div class="sticky-side">
+
+                        <span class="eyebrow">SCHOLARSHIP MATCHING</span>
+
+                        <h3>Better information.<br>Better opportunities.</h3>
+
+                        <p>Your academic profile helps Scholara identify scholarship opportunities that may fit your
+                            background.</p>
+
+                        <div class="profile-aside-points">
+                            <div>✓ Academic details support matching.</div>
+                            <div>✓ Discover relevant funding.</div>
+                            <div>✓ Update your profile anytime.</div>
+                        </div>
+
+                    </div>
+                </aside>
+
+            </div>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='profile.js') }}"></script>
+{% endblock %}

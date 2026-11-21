@@ -1,0 +1,136 @@
+
+{% extends "layout.html" %}
+
+{% block title %}Sign in | Scholara{% endblock %}
+
+{% block content %}
+
+<main class="gate-page">
+
+    <section class="gate-panel auth-panel" aria-label="Student account">
+
+        <a class="brand" aria-label="Scholara home" href="/">
+            <span class="brand-symbol" aria-hidden="true">
+                <i></i><i></i><i></i>
+            </span>
+
+            <span>Scholara<span class="brand-period">.</span></span>
+        </a>
+
+
+        <div class="gate-eyebrow">
+            YOUR STUDENT WORKSPACE
+        </div>
+
+
+        <h1>Welcome back.</h1>
+
+
+        <p class="gate-description">
+            Sign in to discover scholarship opportunities
+            and continue your academic journey.
+        </p>
+
+
+        {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+
+
+        <form class="auth-form" method="POST" action="{{ url_for('signin') }}">
+
+            <label for="email">
+                Email address
+
+                <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autocomplete="email"
+                    required
+                    placeholder="you@example.com"
+                >
+            </label>
+
+
+            <label for="password">
+                Password
+
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                    minlength="8"
+                    placeholder="At least 8 characters"
+                >
+            </label>
+
+
+            <button class="gate-submit" type="submit">
+
+                Sign in
+
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="17"
+                     height="17"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round">
+
+                    <path d="M5 12h14"></path>
+                    <path d="m12 5 7 7-7 7"></path>
+
+                </svg>
+
+            </button>
+
+        </form>
+
+
+        <button type="button" class="auth-text-button">
+            Forgot your password?
+        </button>
+
+
+        <p class="auth-switch">
+            New to Scholara?
+            <a href="{{ url_for('signup') }}">Create an account</a>
+        </p>
+
+
+        <div class="auth-assurance">
+
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 width="18"
+                 height="18"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 stroke-linejoin="round">
+
+                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path>
+                <path d="m9 12 2 2 4-4"></path>
+
+            </svg>
+
+            <span>Private student accounts. Your information stays personal.</span>
+
+        </div>
+
+
+        <a href="/" class="gate-back">
+            ← Back to Scholara homepage
+        </a>
+
+    </section>
+
+</main>
+
+{% endblock %}

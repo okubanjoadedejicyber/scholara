@@ -1,145 +1,325 @@
+
+
 {% extends "layout.html" %}
 
-{% block title %}Scholara | Discover Scholarships{% endblock %}
+{% block title %}Sign in | Scholara{% endblock %}
 
 {% block content %}
 
-<!-- HERO SECTION -->
-<section class="hero">
+<div class="marketing">
 
-    <div class="hero-content">
+    <!-- NAVBAR -->
+    <header class="site-header">
+        <a class="brand" href="/">
+            <span class="brand-symbol">
+                <i></i><i></i><i></i>
+            </span>
+            <span>Scholara<span class="brand-period">.</span></span>
+        </a>
 
-        <div class="hero-label">
-            YOUR FUTURE STARTS HERE
+        <nav class="main-nav">
+            <a href="#approach">Our approach</a>
+            <a href="#how">How it works</a>
+            <a href="#opportunities">Explore scholarships</a>
+        </nav>
+
+        <a class="btn btn-dark header-action" href="/signin">
+            Sign in <span>↗</span>
+        </a>
+    </header>
+
+
+    <!-- HERO SECTION -->
+    <main>
+
+        <section class="hero">
+
+            <div class="hero-body">
+
+                <div class="hero-eyebrow">
+                    <span class="thin-line"></span>
+                    BUILT FOR STUDENTS SEEKING OPPORTUNITIES
+                </div>
+
+                <h1>
+                    Your education deserves<br>
+                    <em>every opportunity.</em>
+                </h1>
+
+                <p>
+                    Finding scholarships shouldn't feel like searching endlessly
+                    across the internet. Scholara helps students discover
+                    opportunities, understand eligibility and find scholarships
+                    that fit their academic journey.
+                </p>
+
+                <div class="hero-actions">
+                    <a class="btn btn-dark btn-large" href="/signup">
+                        Find your scholarship <span>→</span>
+                    </a>
+
+                    <a class="text-arrow" href="#how">
+                        See how Scholara works <span>›</span>
+                    </a>
+                </div>
+
+                <div class="hero-small">
+                    <span class="hero-seal">✓</span>
+                    Discover opportunities. Understand requirements.
+                    Apply with confidence.
+                </div>
+
+            </div>
+
+
+            <!-- VISUAL PREVIEW -->
+            <div class="hero-art">
+
+                <div class="hero-art-top">
+                    <span class="mini-brand">S</span>
+                    <span>YOUR SCHOLARSHIP DISCOVERY</span>
+                    <span class="edition">NO. 01 / STUDENTS</span>
+                </div>
+
+                <div class="hero-art-label">
+                    The opportunity<br>
+                    <em>you've been looking for.</em>
+                </div>
+
+                <div class="preview-stack">
+
+                    <div class="preview-card">
+
+                        <div class="preview-org">
+                            <span class="preview-orb">S</span>
+
+                            <div>
+                                <strong>Scholarship opportunities</strong>
+                                <small>Education · Funding</small>
+                            </div>
+
+                            <span class="preview-label">Discover</span>
+                        </div>
+
+                        <h4>Your next step starts here.</h4>
+
+                        <p>
+                            Explore scholarships and funding opportunities
+                            collected from different sources.
+                        </p>
+
+                        <div class="preview-bottom">
+                            <span>✓ Eligibility information</span>
+                            <span>↗</span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="preview-card secondary">
+
+                        <div class="preview-org">
+                            <span class="preview-orb pale">+</span>
+
+                            <div>
+                                <strong>Personalised discovery</strong>
+                                <small>Based on your student profile</small>
+                            </div>
+                        </div>
+
+                        <h4>Find opportunities that fit.</h4>
+
+                    </div>
+
+                </div>
+
+                <div class="art-footnote">
+                    A SMARTER WAY TO FIND SCHOLARSHIPS <span>↗</span>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- TRUST LINE -->
+        <div class="trust-line" id="opportunities">
+            <span>NOT MORE SEARCHING. MORE DIRECTION.</span>
+
+            <div>
+                Discover scholarships
+                <b>·</b>
+                Check eligibility
+                <b>·</b>
+                Track opportunities
+            </div>
         </div>
 
-        <h1>
-            Your Education Deserves
-            <span>Every Opportunity.</span>
-        </h1>
 
-        <p>
-            Discover scholarships and educational funding opportunities
-            from Nigeria and around the world, all in one place.
-        </p>
+        <!-- APPROACH -->
+        <section class="approach-section" id="approach">
 
-        <div class="hero-buttons">
-            <a href="{{ url_for('discover') }}" class="btn-primary">
-                Explore Scholarships
+            <div class="section-intro">
+
+                <span class="eyebrow">THE SCHOLARA APPROACH</span>
+
+                <h2>
+                    Less time searching.<br>
+                    <em>More time applying.</em>
+                </h2>
+
+                <p>
+                    A smarter way to find financial support for your education.
+                    Scholara brings scholarship opportunities together
+                    so students can focus on the opportunities that matter.
+                </p>
+
+            </div>
+
+
+            <div class="approach-grid">
+
+                <div class="approach-cell">
+
+                    <span class="approach-index">01 / DISCOVER</span>
+
+                    <div class="approach-icon">⌕</div>
+
+                    <h3>Find relevant scholarships.</h3>
+
+                    <p>
+                        Discover scholarships from different sources,
+                        starting with opportunities available to Nigerian students.
+                    </p>
+
+                </div>
+
+
+                <div class="approach-cell">
+
+                    <span class="approach-index">02 / MATCH</span>
+
+                    <div class="approach-icon">✓</div>
+
+                    <h3>Know where you stand.</h3>
+
+                    <p>
+                        Compare scholarship requirements with your academic
+                        profile and understand your eligibility.
+                    </p>
+
+                </div>
+
+
+                <div class="approach-cell">
+
+                    <span class="approach-index">03 / TRACK</span>
+
+                    <div class="approach-icon">↗</div>
+
+                    <h3>Stay on top of deadlines.</h3>
+
+                    <p>
+                        Save opportunities, keep track of application deadlines
+                        and organise the scholarships you intend to apply for.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- HOW IT WORKS -->
+        <section class="how-section" id="how">
+
+            <div class="how-heading">
+
+                <span class="eyebrow">A SIMPLER WAY FORWARD</span>
+
+                <h2>
+                    From searching to<br>
+                    <em>your next opportunity.</em>
+                </h2>
+
+            </div>
+
+
+            <div class="how-steps">
+
+                <p>
+                    <span>01</span>
+                    Create your student profile.
+                </p>
+
+                <p>
+                    <span>02</span>
+                    Discover scholarships that match your profile.
+                </p>
+
+                <p>
+                    <span>03</span>
+                    Review requirements and save opportunities.
+                </p>
+
+                <p>
+                    <span>04</span>
+                    Track your applications and deadlines.
+                </p>
+
+                <a class="btn btn-light" href="/signup">
+                    Get started <span>↗</span>
+                </a>
+
+            </div>
+
+        </section>
+
+
+        <!-- CTA -->
+        <section class="bottom-cta">
+
+            <div>
+                <span class="eyebrow">YOUR NEXT OPPORTUNITY</span>
+
+                <h2>
+                    Your education.<br>
+                    Your possibilities.
+                </h2>
+
+                <p>
+                    Start discovering scholarship opportunities today.
+                </p>
+            </div>
+
+            <a href="/signup" class="btn btn-dark btn-large">
+                Join Scholara <span>→</span>
             </a>
 
-            {% if not current_user.is_authenticated %}
-            <a href="{{ url_for('register') }}" class="btn-secondary">
-                Create Free Account
-            </a>
-            {% endif %}
-        </div>
+        </section>
 
-    </div>
-
-    <div class="hero-info">
-        <div class="info-card">
-            <span>01</span>
-            <h3>Discover</h3>
-            <p>Find scholarship opportunities from different sources.</p>
-        </div>
-
-        <div class="info-card">
-            <span>02</span>
-            <h3>Compare</h3>
-            <p>Check requirements and find opportunities that fit you.</p>
-        </div>
-
-        <div class="info-card">
-            <span>03</span>
-            <h3>Apply</h3>
-            <p>Connect directly to official scholarship applications.</p>
-        </div>
-    </div>
-
-</section>
+    </main>
 
 
-<!-- SEARCH SECTION -->
-<section class="search-section">
+    <!-- FOOTER -->
+    <footer class="site-footer">
 
-    <div>
-        <h2>What opportunity are you looking for?</h2>
-        <p>Start discovering scholarships that match your goals.</p>
-    </div>
+        <a class="brand" href="/">
+            <span class="brand-symbol">
+                <i></i><i></i><i></i>
+            </span>
 
-    <form action="{{ url_for('discover') }}" method="GET" class="search-form">
+            <span>Scholara<span class="brand-period">.</span></span>
+        </a>
 
-        <input type="text" name="q" placeholder="Search scholarships, countries or institutions...">
+        <span>Helping students find opportunities.</span>
 
-        <button type="submit">Search</button>
+        <small>Built for the next generation of scholars.</small>
 
-    </form>
+    </footer>
 
-</section>
-
-
-<!-- WHY SCHOLARA -->
-<section class="features-section">
-
-    <div class="section-heading">
-        <span>WHY SCHOLARA?</span>
-        <h2>Making scholarship discovery easier.</h2>
-        <p>
-            We bring scholarship opportunities together
-            so students can spend less time searching and
-            more time preparing to apply.
-        </p>
-    </div>
-
-    <div class="features-grid">
-
-        <div class="feature-card">
-            <div class="feature-icon">01</div>
-            <h3>Discover Opportunities</h3>
-            <p>
-                Find scholarship opportunities from Nigerian
-                and international sources.
-            </p>
-        </div>
-
-        <div class="feature-card">
-            <div class="feature-icon">02</div>
-            <h3>Find Your Match</h3>
-            <p>
-                Compare your academic information with
-                scholarship eligibility requirements.
-            </p>
-        </div>
-
-        <div class="feature-card">
-            <div class="feature-icon">03</div>
-            <h3>Stay Updated</h3>
-            <p>
-                Keep track of application deadlines and
-                save interesting opportunities.
-            </p>
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- CALL TO ACTION -->
-<section class="cta-section">
-
-    <h2>Your next opportunity could change everything.</h2>
-
-    <p>
-        Start discovering scholarships and take another
-        step towards your educational goals.
-    </p>
-
-    <a href="{{ url_for('discover') }}" class="btn-light">
-        Find Scholarships
-    </a>
-
-</section>
+</div>
 
 {% endblock %}
+

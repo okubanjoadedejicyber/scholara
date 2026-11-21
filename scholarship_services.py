@@ -4,6 +4,15 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import re
 import time
+import os
+from dotenv import load_dotenv
+from groq import Groq
+
+load_dotenv()
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 
 
@@ -203,3 +212,68 @@ if __name__ == "__main__":
         print("Link:", scholarship["url"])
 
     print(f"\nTotal opportunities found: {len(results)}")
+
+
+
+# 6. AI SCHOLARSHIP ANALYSIS
+
+def analyse_with_ai(scholarship_text, student):
+
+    if not client:
+        return "Groq API key is missing. Check your .env file."
+
+    prompt = f"""
+    You are Scholara, an assistant that helps students
+    understand scholarship opportunities.
+
+    STUDENT INFORMATION:
+    Country: {student.get('country', 'Not provided')}
+    Education level: {student.get('level', 'Not provided')}
+    Course: {student.get('course', 'Not provided')}
+    GPA: {student.get('gpa', 'Not provided')}
+
+    SCHOLARSHIP INFORMATION:
+    {scholarship_text[:10000]}
+
+    Analyse this scholarship against the student's information.
+
+    Provide your response using these headings:
+
+    1. Scholarship Overview
+    2. Eligibility Requirements
+    3. Student Eligibility
+    4. Match Score (0-100)
+    5. Reasons for the Score
+    6. Missing Information
+    7. Application Advice
+
+    Do not invent scholarship requirements or deadlines.
+    If information is missing, clearly say so.
+    Do not claim the student is officially eligible.
+    """
+
+    try:
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a careful scholarship eligibility analyst."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.2,
+            max_completion_tokens=1200
+        )
+
+        return response.choices[0].message.content
+
+    except Exception as error:
+
+        print("Groq error:", error)
+
+        return "Unable to analyse this scholarship right now."
